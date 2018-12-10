@@ -1,3 +1,3 @@
-import Core from './core'
+import HTMLParser from './plugins/html-parser'
 
-module.exports = Core;
+module.exports = HTMLParser;

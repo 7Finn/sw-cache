@@ -24,25 +24,22 @@ const conditionalComment = /^<!\[/;
 
 
 
-import DomNode, { DomType } from './Node'
+import { DomType, DomNode, TextNode } from './Node/index'
 
 export default class HtmlParser {
 
     html: string; // 模板
     index: number = 0; // 当前索引
     stack: Array<DomNode> = []; //
-    startStack: Array<DomNode> = [];
-    endStack: Array<any> = [];
 
     root: DomNode; 
-    currentParent: DomNode | null = null;
+    currentParent: DomNode;
 
     constructor(html: string) {
+        console.log(html)
         this.html = html;
-        this.root = new DomNode('root', DomType.Root)
-    }
-
-    parse(html: string) {
+        this.root = new DomNode('root', DomType.Root);
+        this.currentParent = this.root;
     }
 
     /**
@@ -54,54 +51,80 @@ export default class HtmlParser {
      * @param {boolean} unary 是否结束标签
      * @memberof HtmlParser
      */
-    build(tag: string, type: DomType, attrs: Array<string>, unary: boolean) {
+    buildDomNode(tag: string, type: DomType, attrs: Array<string> = [], unary: boolean = false) {
         let node = new DomNode(tag, type, attrs);
-
-        // 有父节点，并且不是结束标签
-        if (this.currentParent && !unary) {
-            this.currentParent.appendChild(node);
-            node.setParent(this.currentParent);
-        }
-
         
         if (!unary) {
             // 不是结束标签
             switch (type) {
                 case DomType.Tag:
+                    // 添加节点到当前父节点的Child
+                    this.currentParent.appendChild(node);
+                    // 设置当前节点的父节点
+                    node.setParent(this.currentParent);
                     // 当前的父节点切换到当前节点
                     this.currentParent = node;
-                    this.startStack.push(node);
                     break;
             }
             this.stack.push(node);
         } else {
-            // 记录结束标签
-            this.endStack.push(node);
-            // 取出开始标签中上一层的父节点当做当前节点
-            this.currentParent = this.startStack[this.endStack.length - 1].getParent();
+            // 结束标签
+            let pos;
+            for (pos = this.stack.length - 1; pos >= 0; pos--) {
+                if (this.stack[pos].tag === node.tag) break;
+            }
+            if (pos >= 0) {
+                // 取出开始标签中上一层的父节点当做当前节点
+                this.currentParent = this.stack[pos].getParent() || this.root;
+                // 清除堆栈
+                this.stack.length = pos;
+            } else if (tag.toLowerCase() === 'br') {
+                this.currentParent.appendChild(node);
+            }
         }
     }
 
-    parseHtml(html: string) {
-        let stack = [];
-        let index = 0; // 记录html当前索引
-        let isUnaryTag = false;
+    buildTextNode(text: string) {
+        this.currentParent.appendChild(new TextNode(text));
+    }
+
+    parseHtml() {
+        this.matchStartTag();
+
 
         while(true) {
+            
+            // 匹配文本
+            this.matchText()
             // 匹配注释
             if (this.matchComment()) continue;
             // 匹配文档类型
             if (this.matchDoctype()) continue;
+            // 匹配结束标签
+            this.matchEndTag();
             // 匹配开始标签
             this.matchStartTag();
-            // 匹配结束标签
 
+            // 检查是否结束
+            if (this.eof()) break;
         }
+
+        console.log(this.root.getChildren())
     }
 
     advance(n: number): void {
         this.index += n;
         this.html = this.html.substring(n);
+    }
+
+    matchText() {
+        let index = this.html.indexOf('<');
+        if (index < 0) {
+            this.html = '';
+        } else if (index > 0) {
+            this.buildTextNode(this.html.substring(0, index));
+            this.advance(index);
+        }
     }
 
     matchDoctype(): boolean {
@@ -128,11 +151,7 @@ export default class HtmlParser {
     }
 
     matchStartTag() {
-        const { tag } = this.matchStartTagOpen()
-        if (tag) {
-            this.matchStartTagClose();
-            return 
-        }
+        return this.matchStartTagOpen() && this.matchStartTagClose();
     }
 
     // 匹配开始标签的 <tag 部分
@@ -141,13 +160,10 @@ export default class HtmlParser {
 
         if( match = this.html.match(startTagOpen) ) {
             this.advance(match[0].length)
-
-            return {
-                tag: match[1]
-            }
-        } else {
-            return { }
+            this.buildDomNode(match[1], DomType.Tag, [], false)
+            return true;
         }
+        return false;
     }
 
     // 匹配开始标签的 attrs> 部分
@@ -161,16 +177,33 @@ export default class HtmlParser {
 
         if (closeMatch) {
             this.advance(closeMatch[0].length);
-            return { }
+            return true;
         } else {
-            return { }
+            return false;
         }
     }
 
     matchEndTag() {
         let match = this.html.match(endTag);
         if (match) {
-            
+            this.advance(match[0].length)
+            this.buildDomNode(match[1], DomType.Tag, [], true)
         }
     }
+
+    eof() {
+        if (this.html === '') return true;
+        return false;
+    }
+
+    format() {
+        return this.root.format();
+    }
 }
+
+let parser = new HtmlParser(`
+    <div><a>123</a></div>
+`)
+
+parser.parseHtml()
+console.log(JSON.stringify(parser.format()));
