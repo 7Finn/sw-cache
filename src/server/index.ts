@@ -1,3 +1,3 @@
-import HTMLParser from './plugins/html-parser'
+import HtmlParser from './utils/html-parser';
 
-module.exports = HTMLParser;
+module.exports.HtmlParser = HtmlParser
