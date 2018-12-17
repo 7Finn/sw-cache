@@ -21,14 +21,21 @@ export default class ASTree {
      * @param {boolean} [unary=false]
      * @memberof ASTree
      */
-    buildTagNode(tag: string, attrs: Array<string> = [], unary: boolean = false) {
+    buildTagNode(tag: string, attrs: Array<string> = [], unary: boolean = false): Node {
         let node = new Node(tag, NodeType.Tag, attrs);
         
         if (!unary) {
             // 不是结束标签
             this.append(this.current, node); // 添加节点到当前父节点的Child
-            this.current = node; // 当前的父节点切换到当前节点
-            this.stack.push(node);
+            switch(tag.toLowerCase()) {
+                case 'meta':
+                    // meta 没有闭合，也不需要入栈
+                    break;
+                default: 
+                    this.current = node; // 当前的父节点切换到当前节点
+                    this.stack.push(node);
+                    break;
+            }
         } else {
             // 结束标签
             let pos;
@@ -44,6 +51,8 @@ export default class ASTree {
                 this.append(this.current, node);
             }
         }
+
+        return node;
     }
 
     /**
@@ -82,5 +91,9 @@ export default class ASTree {
 
     getDepth(): number {
         return this.depth;
+    }
+
+    toString(): any {
+        return this.root.toString()
     }
 }

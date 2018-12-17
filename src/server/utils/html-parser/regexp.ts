@@ -22,6 +22,13 @@ class Regexp {
     doctype = /^<!DOCTYPE [^>]+>/i;
     comment = /^<!--/;
     conditionalComment = /^<!\[/;
+
+    
+    ltRE = /&lt;/g
+    gtRE = /&gt;/g
+    nlRE = /&#10;/g
+    ampRE = /&amp;/g
+    quoteRE = /&quot;/g
 }
 
 export default new Regexp();

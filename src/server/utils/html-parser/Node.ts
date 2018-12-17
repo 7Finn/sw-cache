@@ -69,13 +69,15 @@ export default class Node {
         return this.text;
     }
 
-    format(): any {
+    toString(): any {
         return {
             tag: this.tag,
             type: this.type,
             attrs: this.attrs,
+            text: this.text,
+            depth: this.depth,
             children: this.children.map(item => {
-                return item.format()
+                return item.toString()
             })
         }
     }
