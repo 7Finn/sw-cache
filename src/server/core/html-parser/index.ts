@@ -1,7 +1,7 @@
 
 
 import ASTree from './Tree'
-import Node from './Node'
+import { TagNode, TextNode, IAttr } from './Node'
 import regexp from './regexp'
 
 export default class HtmlParser {
@@ -12,6 +12,7 @@ export default class HtmlParser {
     asTree: ASTree = new ASTree();
 
     constructor() {
+
     }
 
     parseHtml(html: string) {
@@ -56,6 +57,7 @@ export default class HtmlParser {
         let match = this.html.match(regexp.doctype);
         if (match) {
             this.advance(match[0].length)
+            this.asTree.buildDirectiveNode(match[1])
             return true;
         } else {
             return false;
@@ -91,7 +93,7 @@ export default class HtmlParser {
 
     // 匹配开始标签
     matchStartTag(): boolean {
-        let node: Node | null = this.matchStartTagOpen();
+        let node: TagNode | null = this.matchStartTagOpen();
         if (node) {
             this.matchStartTagClose(node);
             return true;
@@ -101,23 +103,24 @@ export default class HtmlParser {
     }
 
     // 匹配开始标签的 <tag 部分
-    matchStartTagOpen(): Node | null {
+    matchStartTagOpen(): TagNode | null {
         let match = null;
         if( (match = this.html.match(regexp.startTagOpen)) ) {
             this.advance(match[0].length)
-            return this.asTree.buildTagNode(match[1], [], false)
+            return this.asTree.buildTagNode(match[1], false)
         }
         return null;
     }
 
     // 匹配开始标签的 attrs> 部分
-    matchStartTagClose(node: Node): boolean {
+    matchStartTagClose(node: TagNode): boolean {
         let closeMatch = null;
         let attrMatch = null;
         let attrMatches = [];
+
+        // 记录attrs
         while ( !(closeMatch = this.html.match(regexp.startTagClose)) && (attrMatch = this.html.match(regexp.attribute)) ) {
             this.advance(attrMatch[0].length)
-            // TODO: 记录attrs
             attrMatches.push(attrMatch)
         }
 
@@ -135,15 +138,21 @@ export default class HtmlParser {
         let match = this.html.match(regexp.endTag);
         if (match) {
             this.advance(match[0].length)
-            this.asTree.buildTagNode(match[1], [], true)
+            this.asTree.buildTagNode(match[1], true)
         }
     }
 
-    parseAttrs(attrMatches: Array<any>): Array<any> {
+    /**
+     * 解析attrs的正则匹配
+     *
+     * @param {Array<any>} attrMatches 正则匹配数组
+     * @returns {Array<IAttr>} attrs数组
+     * @memberof HtmlParser
+     */
+    parseAttrs(attrMatches: Array<any>): Array<IAttr> {
         let attrs = [];
         for (let i = 0; i < attrMatches.length; i++) {
             let args = attrMatches[i];
-            // hackish work around FF bug https://bugzilla.mozilla.org/show_bug.cgi?id=369778
             if (args[0].indexOf('""') === -1) {
                 if (args[3] === '') {
                     delete args[3];
@@ -165,7 +174,7 @@ export default class HtmlParser {
         return attrs;
     }
 
-    decodeAttr(value: string, shouldDecodeNewlines: boolean) {
+    decodeAttr(value: string, shouldDecodeNewlines: boolean): string {
         if (shouldDecodeNewlines) {
             value = value.replace(regexp.nlRE, '\n');
         }
@@ -191,7 +200,7 @@ export default class HtmlParser {
         return this.asTree.getDepth()
     }
 
-    toString(): any {
+    toString(): string {
         return this.asTree.toString();
     }
 }

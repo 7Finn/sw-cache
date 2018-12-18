@@ -1,14 +1,14 @@
-import Node, { NodeType } from './Node'
+import { TagNode, TextNode, DirectiveNode, NodeType, IAttr } from './Node'
 
 export default class ASTree {
-    root: Node;
+    root: TagNode;
     depth: number = 0;
     width: number = 0;
-    stack: Array<Node> = [];
-    current: Node;
+    stack: Array<TagNode> = [];
+    current: TagNode;
 
     constructor() {
-        this.root = new Node('root', NodeType.Root);
+        this.root = new TagNode('root');
         this.current = this.root;
     }
 
@@ -17,12 +17,11 @@ export default class ASTree {
      * 构造一个Tag节点
      *
      * @param {string} tag 标签名
-     * @param {Array<string>} [attrs=[]]
      * @param {boolean} [unary=false]
      * @memberof ASTree
      */
-    buildTagNode(tag: string, attrs: Array<string> = [], unary: boolean = false): Node {
-        let node = new Node(tag, NodeType.Tag, attrs);
+    buildTagNode(tag: string, unary: boolean = false): TagNode {
+        let node = new TagNode(tag);
         
         if (!unary) {
             // 不是结束标签
@@ -61,19 +60,26 @@ export default class ASTree {
      * @param {string} text
      * @memberof HtmlParser
      */
-    buildTextNode(text: string) {
-        let node = new Node('text', NodeType.Text, [], text);
+    buildTextNode(text: string): TextNode {
+        let node = new TextNode(text);
         this.append(this.current, node);
+        return node;
     }
 
-    append(parent: Node, child: Node) {
+    buildDirectiveNode(data: string): DirectiveNode {
+        let node = new DirectiveNode(data)
+        this.append(this.current, node);
+        return node;
+    }
+
+    append(parent: TagNode, child: TagNode | TextNode | DirectiveNode) {
         parent.appendChild(child);
 
         this.setWidth(parent.getWidth());
         this.setDepth(child.getDepth());
     }
 
-    getRoot(): Node {
+    getRoot(): TagNode {
         return this.root;
     }
 
@@ -93,7 +99,7 @@ export default class ASTree {
         return this.depth;
     }
 
-    toString(): any {
-        return this.root.toString()
+    toString(space = 4): string {
+        return JSON.stringify(this.root.toString(), null, space)
     }
 }

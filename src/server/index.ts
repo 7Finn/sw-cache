@@ -1,4 +1,4 @@
-import HtmlParser from './utils/html-parser';
+import HtmlParser from './core/html-parser';
 
 let parser = new HtmlParser();
 parser.parseHtml(`
@@ -16,6 +16,6 @@ parser.parseHtml(`
 </html>`
 )
 
-console.log(JSON.stringify(parser.toString(), null, 4));
+console.log(parser.toString());
 
 module.exports.HtmlParser = HtmlParser

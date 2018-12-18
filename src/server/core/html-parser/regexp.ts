@@ -19,7 +19,7 @@ class Regexp {
     startTagOpen = new RegExp('^<' + this.qnameCapture);
     startTagClose = /^\s*(\/?)>/;
     endTag = new RegExp('^<\\/' + this.qnameCapture + '[^>]*>');
-    doctype = /^<!DOCTYPE [^>]+>/i;
+    doctype = /^<!DOCTYPE ([^>]+)>/i;
     comment = /^<!--/;
     conditionalComment = /^<!\[/;
 
@@ -29,6 +29,9 @@ class Regexp {
     nlRE = /&#10;/g
     ampRE = /&amp;/g
     quoteRE = /&quot;/g
+
+    space = /^\s/;
+    checline = /^[\r\n]/;
 }
 
 export default new Regexp();
